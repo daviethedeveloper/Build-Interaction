@@ -7,37 +7,6 @@ dotenv.config();
 const PROGRAM_ID = new Web3.PublicKey("ChT1B39WKLS8qUrkLvFDXMhEJ4F1XZzwUNHUt4AU9aVa")
 const PROGRAM_DATA_PUBLIC_KEY = new Web3.PublicKey("Ah9K7dQ8EHaZqcAsgBW8w37yN2eAy3koFmUn4x3CJtod")
 
-async function pingProgram(connection: Web3.Connection, payer: Web3.Keypair){
-  const transaction = new Web3.Transaction()
-  const instruction = new Web3.TransactionInstruction({
-    // Instructions need 3 things
-
-    // 1. The public keys of all the accounts the instruction will read/write
-    keys: [
-      {
-        pubkey: PROGRAM_DATA_PUBLIC_KEY,
-        isSigner: false,
-        isWritable: true
-      }
-    ],
-
-    // 2. The ID of the program this instruction will be sent to
-    programId: PROGRAM_ID
-
-    // 3. Data - no data to be sent here
-})
-
-transaction.add(instruction)
-
-const transactionSignature = await Web3.sendAndConfirmTransaction(connection, transaction, [payer])
-
-console.log(
-  `Transaction https://explorer.solana.com/tx/${transactionSignature}?cluster=devnet`
-  )
-}
-
-
-
 
 
 async function initializeKeypair(connection: Web3.Connection): Promise<Web3.Keypair> {
@@ -89,6 +58,52 @@ async function airdropSolIfNeeded(
   }
 }
 
+async function pingProgram(connection: Web3.Connection, payer: Web3.Keypair){
+  const transaction = new Web3.Transaction()
+  const instruction = new Web3.TransactionInstruction({
+    // Instructions need 3 things
+
+    // 1. The public keys of all the accounts the instruction will read/write
+    keys: [
+      {
+        pubkey: PROGRAM_DATA_PUBLIC_KEY,
+        isSigner: false,
+        isWritable: true
+      }
+    ],
+
+    // 2. The ID of the program this instruction will be sent to
+    programId: PROGRAM_ID
+
+    // 3. Data - no data to be sent here
+})
+
+transaction.add(instruction)
+
+const transactionSignature = await Web3.sendAndConfirmTransaction(connection, transaction, [payer])
+
+console.log(
+  `Transaction https://explorer.solana.com/tx/${transactionSignature}?cluster=devnet`
+  )
+}
+
+async function transferSOL(to:Web3.PublicKey, amount:number, connection:Web3.Connection, payer:Web3.Keypair) {
+  const transaction = new Web3.Transaction()
+  const instruction = Web3.SystemProgram.transfer({
+    fromPubkey: payer.publicKey,
+    toPubkey: to,
+    lamports: amount * Web3.LAMPORTS_PER_SOL
+  })
+  transaction.add(instruction)
+  const transactionSignature = await Web3.sendAndConfirmTransaction(connection, transaction, [payer])
+  console.log(
+    'Transfer SOL transaction completed. Transaction signature:'
+  ),
+  console.log(
+    `https://explorer.solana.com/tx/${transactionSignature}?cluster=devnet`
+    )
+}
+
 
 
 
@@ -101,6 +116,7 @@ async function main() {
   const signer= await initializeKeypair(connection);
   console.log('Keypair: ', signer.publicKey.toString());
   await pingProgram(connection, signer);
+  await transferSOL(new Web3.PublicKey("iaSnNNU6GGsSsxP1SKrmPJNPmqLhdR6SU7TkfZzSb6j"), 0.1, connection, signer)
 
 
   console.log("Public key:", signer.publicKey.toBase58());
